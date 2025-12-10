@@ -4,6 +4,8 @@
     Adapta-se automaticamente a proteções do jogo
 ]]
 
+print("🚀 Flight Mode ULTRA: Iniciando carregamento...")
+
 local player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -2190,52 +2192,62 @@ end)
 
 -- ========== INICIALIZAÇÃO ==========
 local function initialize()
-    -- Aguarda personagem estar completamente carregado
-    char = player.Character or player.CharacterAdded:Wait()
-    
-    -- Aguarda partes essenciais
-    task.wait(0.5) -- Aguarda personagem estar totalmente carregado
-    
-    if not char or not char.Parent then return end
-    
-    hrp = char:WaitForChild("HumanoidRootPart", 10)
-    hum = char:WaitForChild("Humanoid", 10)
-    
-    if not hrp or not hum then
-        warn("❌ Não foi possível encontrar HumanoidRootPart ou Humanoid")
-        return
-    end
-    
-    -- Verifica se personagem está vivo
-    if hum.Health <= 0 then
-        warn("❌ Personagem está morto, aguardando respawn...")
-        return
-    end
-    
-    -- Salva valores originais apenas uma vez
-    if not originalWalkSpeed then
-        originalWalkSpeed = hum.WalkSpeed
-    end
-    if not originalJumpPower then
-        originalJumpPower = hum.JumpPower
-    end
-    
-    createGUI()
-    updateGUI()
-    
-    if connection then
-        connection:Disconnect()
-    end
-    
-    -- OTIMIZAÇÃO: Usa Heartbeat em vez de Stepped (menos pesado)
-    connection = RunService.Heartbeat:Connect(function()
-        pcall(function() -- Proteção contra crashes
-            updateFlight()
+    pcall(function()
+        -- Aguarda personagem estar completamente carregado
+        char = player.Character or player.CharacterAdded:Wait()
+        
+        -- Aguarda partes essenciais
+        task.wait(0.5) -- Aguarda personagem estar totalmente carregado
+        
+        if not char or not char.Parent then 
+            warn("❌ Personagem não encontrado")
+            return 
+        end
+        
+        hrp = char:WaitForChild("HumanoidRootPart", 10)
+        hum = char:WaitForChild("Humanoid", 10)
+        
+        if not hrp or not hum then
+            warn("❌ Não foi possível encontrar HumanoidRootPart ou Humanoid")
+            return
+        end
+        
+        -- Verifica se personagem está vivo
+        if hum.Health <= 0 then
+            warn("❌ Personagem está morto, aguardando respawn...")
+            return
+        end
+        
+        -- Salva valores originais apenas uma vez
+        if not originalWalkSpeed then
+            originalWalkSpeed = hum.WalkSpeed
+        end
+        if not originalJumpPower then
+            originalJumpPower = hum.JumpPower
+        end
+        
+        pcall(function()
+            createGUI()
         end)
+        
+        pcall(function()
+            updateGUI()
+        end)
+        
+        if connection then
+            connection:Disconnect()
+        end
+        
+        -- OTIMIZAÇÃO: Usa Heartbeat em vez de Stepped (menos pesado)
+        connection = RunService.Heartbeat:Connect(function()
+            pcall(function() -- Proteção contra crashes
+                updateFlight()
+            end)
+        end)
+        
+        lastUpdate = tick()
+        print("✈️ Flight Mode ULTRA: Inicializado")
     end)
-    
-    lastUpdate = tick()
-    print("✈️ Flight Mode ULTRA: Inicializado")
 end
 
 -- ========== EVENTOS ==========
@@ -2327,38 +2339,44 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 player.CharacterRemoving:Connect(function()
-    cleanup()
-    -- Limpa variáveis
-    char = nil
-    hrp = nil
-    hum = nil
-    originalWalkSpeed = nil
-    originalJumpPower = nil
+    pcall(function()
+        cleanup()
+        -- Limpa variáveis
+        char = nil
+        hrp = nil
+        hum = nil
+        originalWalkSpeed = nil
+        originalJumpPower = nil
+    end)
 end)
 
 player.CharacterAdded:Connect(function(newChar)
-    cleanup()
-    -- Limpa variáveis antigas
-    char = nil
-    hrp = nil
-    hum = nil
-    originalWalkSpeed = nil
-    originalJumpPower = nil
-    
-    -- Aguarda personagem estar totalmente carregado
-    task.wait(1)
-    
-    -- Verifica se personagem ainda existe
-    if player.Character == newChar then
-        initialize()
-    end
+    pcall(function()
+        cleanup()
+        -- Limpa variáveis antigas
+        char = nil
+        hrp = nil
+        hum = nil
+        originalWalkSpeed = nil
+        originalJumpPower = nil
+        
+        -- Aguarda personagem estar totalmente carregado
+        task.wait(1)
+        
+        -- Verifica se personagem ainda existe
+        if player.Character == newChar then
+            initialize()
+        end
+    end)
 end)
 
 -- Aguarda um pouco antes de inicializar se já tiver personagem
-if player.Character then
-    task.wait(0.5)
-    initialize()
-end
+task.spawn(function()
+    if player.Character then
+        task.wait(0.5)
+        initialize()
+    end
+end)
 
 print("✈️ Flight Mode ULTRA Carregado!")
 print("═══════════════════════════════════════")
@@ -5033,34 +5051,38 @@ local function getAnalytics()
 end
 
 -- ========== INICIALIZAÇÃO FINAL ==========
-if ValidationSystem.ValidateOnStart then
-    validateSystem()
-end
+task.spawn(function()
+    pcall(function()
+        if ValidationSystem.ValidateOnStart then
+            validateSystem()
+        end
 
--- Limpeza automática de cache
-createTimer(60, cleanupCache, true)
+        -- Limpeza automática de cache
+        createTimer(60, cleanupCache, true)
 
--- Workers principais
-createWorker("MainUpdate", function()
-    updateAllSystems()
-    updateAdvancedSystems()
-end)
+        -- Workers principais
+        createWorker("MainUpdate", function()
+            updateAllSystems()
+            updateAdvancedSystems()
+        end)
 
-createWorker("PerformanceMonitor", function()
-    updatePerformanceMetrics()
-end)
+        createWorker("PerformanceMonitor", function()
+            updatePerformanceMetrics()
+        end)
 
--- Eventos de sistema
-subscribeEvent("FlightStarted", function()
-    trackEvent("FlightStarted", {Speed = CONFIG.Speed})
-end)
+        -- Eventos de sistema
+        subscribeEvent("FlightStarted", function()
+            trackEvent("FlightStarted", {Speed = CONFIG.Speed})
+        end)
 
-subscribeEvent("FlightStopped", function()
-    trackEvent("FlightStopped", {})
-end)
+        subscribeEvent("FlightStopped", function()
+            trackEvent("FlightStopped", {})
+        end)
 
-subscribeEvent("ItemCollected", function()
-    trackEvent("ItemCollected", {Total = Statistics.ItemsCollected})
+        subscribeEvent("ItemCollected", function()
+            trackEvent("ItemCollected", {Total = Statistics.ItemsCollected})
+        end)
+    end)
 end)
 
 print("═══════════════════════════════════════")
@@ -5438,8 +5460,10 @@ local function finalIntegration()
     end, true)
 end
 
--- Executa integração final
-finalIntegration()
+-- Executa integração final (com proteção)
+pcall(function()
+    finalIntegration()
+end)
 
 print("═══════════════════════════════════════")
 print("🎨 SISTEMAS FINAIS DE MELHORIAS:")
@@ -5463,3 +5487,5 @@ print("✅ MÁXIMA SEGURANÇA IMPLEMENTADA!")
 print("✅ MÁXIMA FUNCIONALIDADE DISPONÍVEL!")
 print("✅ PRONTO PARA USO PROFISSIONAL!")
 print("✅ VERSÃO ULTRA PREMIUM COMPLETA!")
+print("✅ Flight Mode ULTRA: Carregamento concluído!")
+a
