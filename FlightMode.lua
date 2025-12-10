@@ -6,17 +6,27 @@
 
 print("🚀 Flight Mode ULTRA: Iniciando carregamento...")
 
-local player = game.Players.LocalPlayer
+-- Proteção: Verifica se está no cliente antes de continuar
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- ========== VALIDAÇÃO DE AMBIENTE ==========
 if not RunService:IsClient() then
     warn("❌ Flight Mode: Apenas funciona no cliente!")
     return
 end
+
+-- Proteção: Obtém player e serviços de forma segura
+local player = game.Players.LocalPlayer
+if not player then
+    warn("❌ ERRO: Player não encontrado. Aguardando...")
+    player = game.Players:WaitForChild(game.Players.LocalPlayer.Name, 10)
+    if not player then
+        warn("❌ ERRO CRÍTICO: Não foi possível obter o player!")
+        return
+    end
+end
+
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- ========== CONFIGURAÇÕES AVANÇADAS ==========
 local CONFIG = {
@@ -740,17 +750,46 @@ local function updateBypassSystem()
     end
 end
 
+-- ========== FUNÇÃO AUXILIAR PARA OBTER PLAYERGUI ==========
+local function getPlayerGui()
+    if not player then return nil end
+    
+    local playerGui = player:FindFirstChild("PlayerGui")
+    if playerGui then return playerGui end
+    
+    -- Tenta esperar pelo PlayerGui
+    local success, result = pcall(function()
+        return player:WaitForChild("PlayerGui", 5)
+    end)
+    
+    if success and result then
+        return result
+    end
+    
+    return nil
+end
+
 -- ========== GUI ULTRA AVANÇADA COM ARRASTAR ==========
 local function createGUI()
     if not CONFIG.ShowGUI then return end
     
-    if gui then gui:Destroy() end
+    local playerGui = getPlayerGui()
+    if not playerGui then
+        warn("❌ PlayerGui não encontrado ao criar GUI")
+        return
+    end
+    
+    if gui then 
+        pcall(function()
+            gui:Destroy()
+        end)
+    end
     
     gui = Instance.new("ScreenGui")
     gui.Name = "FlightModeGUI"
     gui.ResetOnSpawn = false
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    gui.Parent = player:WaitForChild("PlayerGui")
+    gui.Parent = playerGui
     
     -- Frame principal com sombra
     local shadowFrame = Instance.new("Frame")
@@ -2122,10 +2161,13 @@ end
 local function notify(message, duration)
     if not FEATURES.Notifications.Enabled then return end
     
+    local playerGui = getPlayerGui()
+    if not playerGui then return end
+    
     local notification = Instance.new("ScreenGui")
     notification.Name = "Notification"
     notification.ResetOnSpawn = false
-    notification.Parent = player:WaitForChild("PlayerGui")
+    notification.Parent = playerGui
     
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 300, 0, 60)
@@ -3018,10 +3060,13 @@ local RadarSystem = {
 local function createRadar()
     if not CONFIG.ShowGUI then return end
     
+    local playerGui = getPlayerGui()
+    if not playerGui then return end
+    
     local radarGui = Instance.new("ScreenGui")
     radarGui.Name = "RadarGUI"
     radarGui.ResetOnSpawn = false
-    radarGui.Parent = player:WaitForChild("PlayerGui")
+    radarGui.Parent = playerGui
     
     local radarFrame = Instance.new("Frame")
     radarFrame.Name = "RadarFrame"
@@ -3185,10 +3230,13 @@ local function showAdvancedNotification(title, message, notificationType)
         Error = Color3.fromRGB(255, 100, 100)
     }
     
+    local playerGui = getPlayerGui()
+    if not playerGui then return end
+    
     local notification = Instance.new("ScreenGui")
     notification.Name = "AdvancedNotification"
     notification.ResetOnSpawn = false
-    notification.Parent = player:WaitForChild("PlayerGui")
+    notification.Parent = playerGui
     
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(0, 350, 0, 80)
@@ -5214,10 +5262,13 @@ local function createScreenEffect(effectType, duration)
     
     duration = duration or 1
     
+    local playerGui = getPlayerGui()
+    if not playerGui then return end
+    
     local gui = Instance.new("ScreenGui")
     gui.Name = "ScreenEffect"
     gui.ResetOnSpawn = false
-    gui.Parent = player:WaitForChild("PlayerGui")
+    gui.Parent = playerGui
     
     local frame = Instance.new("Frame")
     frame.Size = UDim2.new(1, 0, 1, 0)
@@ -5488,4 +5539,3 @@ print("✅ MÁXIMA FUNCIONALIDADE DISPONÍVEL!")
 print("✅ PRONTO PARA USO PROFISSIONAL!")
 print("✅ VERSÃO ULTRA PREMIUM COMPLETA!")
 print("✅ Flight Mode ULTRA: Carregamento concluído!")
-a
