@@ -2607,20 +2607,22 @@ local function createMacro(name)
     return macro
 end
 
+local MacroRecordingStartTime = 0
+
 local function recordMacroAction(actionType, data)
     if not MacroSystem.RecordingMacro or not MacroSystem.CurrentMacro then return end
     
     table.insert(MacroSystem.CurrentMacro.Actions, {
         Type = actionType,
         Data = data,
-        Time = tick() - MacroSystem.MacroSystem.StartTime
+        Time = tick() - MacroRecordingStartTime
     })
 end
 
 local function startMacroRecording(macroName)
     MacroSystem.RecordingMacro = true
     MacroSystem.CurrentMacro = createMacro(macroName)
-    MacroSystem.MacroSystem.StartTime = tick()
+    MacroRecordingStartTime = tick()
     print("🎬 Gravação de macro iniciada: " .. macroName)
 end
 
@@ -2709,6 +2711,7 @@ local Statistics = {
     PlayersTeleportedTo = 0,
     StartTime = tick(),
     LastPosition = nil,
+    LastUpdate = tick(),
     SpeedHistory = {},
     MaxSpeed = 0
 }
@@ -2747,7 +2750,13 @@ local function getStatistics()
         TeleportsUsed = Statistics.TeleportsUsed,
         ItemsCollected = Statistics.ItemsCollected,
         PlayersTeleportedTo = Statistics.PlayersTeleportedTo,
-        AverageSpeed = #Statistics.SpeedHistory > 0 and (table.reduce(Statistics.SpeedHistory, function(a, b) return a + b end) / #Statistics.SpeedHistory) or 0,
+        AverageSpeed = #Statistics.SpeedHistory > 0 and (function()
+            local sum = 0
+            for _, speed in ipairs(Statistics.SpeedHistory) do
+                sum = sum + speed
+            end
+            return sum / #Statistics.SpeedHistory
+        end)() or 0,
         MaxSpeed = Statistics.MaxSpeed,
         Uptime = tick() - Statistics.StartTime
     }
